@@ -1,6 +1,5 @@
 package com.apkpackager.ui
 
-import android.content.Intent
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -20,10 +19,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 @Composable
-fun AppNavGraph(
-    pendingAuthIntent: Intent?,
-    onAuthIntentConsumed: () -> Unit
-) {
+fun AppNavGraph() {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {
@@ -31,8 +27,6 @@ fun AppNavGraph(
             val vm: LoginViewModel = hiltViewModel()
             LoginScreen(
                 viewModel = vm,
-                pendingAuthIntent = pendingAuthIntent,
-                onAuthIntentConsumed = onAuthIntentConsumed,
                 onLoggedIn = { navController.navigate("repos") { popUpTo("login") { inclusive = true } } }
             )
         }

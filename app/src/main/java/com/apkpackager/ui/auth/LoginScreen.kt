@@ -1,6 +1,5 @@
 package com.apkpackager.ui.auth
 
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -9,35 +8,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import net.openid.appauth.AuthorizationResponse
-import net.openid.appauth.AuthorizationException
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    pendingAuthIntent: Intent?,
-    onAuthIntentConsumed: () -> Unit,
     onLoggedIn: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-
-    // Handle OAuth callback intent
-    LaunchedEffect(pendingAuthIntent) {
-        if (pendingAuthIntent != null) {
-            viewModel.handleAuthResponse(pendingAuthIntent)
-            onAuthIntentConsumed()
-        }
-    }
 
     // Navigate on success
     LaunchedEffect(state) {
         if (state is LoginState.Success) onLoggedIn()
     }
 
-    // Launch OAuth intent
+    // Launch OAuth intent; AppAuth delivers the response via the result intent
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { /* result handled via onNewIntent */ }
+    ) { result ->
+        result.data?.let { viewModel.handleAuthResponse(it) }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
