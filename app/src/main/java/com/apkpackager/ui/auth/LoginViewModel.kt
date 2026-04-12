@@ -51,7 +51,7 @@ class LoginViewModel @Inject constructor(
     }
 
     private fun handleRedirect(uri: Uri) {
-        val request = pendingRequest ?: return
+        val request = pendingRequest ?: authRepository.buildAuthRequest()
         val error = uri.getQueryParameter("error")
         if (error != null) {
             val desc = uri.getQueryParameter("error_description") ?: error

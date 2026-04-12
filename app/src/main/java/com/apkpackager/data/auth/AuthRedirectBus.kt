@@ -1,17 +1,17 @@
 package com.apkpackager.data.auth
 
 import android.net.Uri
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AuthRedirectBus @Inject constructor() {
-    private val _redirects = MutableSharedFlow<Uri>(extraBufferCapacity = 1)
-    val redirects: SharedFlow<Uri> = _redirects
+    private val _redirects = Channel<Uri>(capacity = 1)
+    val redirects = _redirects.receiveAsFlow()
 
     fun publish(uri: Uri) {
-        _redirects.tryEmit(uri)
+        _redirects.trySend(uri)
     }
 }
