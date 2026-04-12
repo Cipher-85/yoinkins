@@ -12,6 +12,10 @@ jobs:
           java-version: '17'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
+      - name: Create local.properties
+        run: |
+          echo "github.client.id=${{ secrets.OAUTH_CLIENT_ID }}" >> local.properties
+          echo "github.client.secret=${{ secrets.OAUTH_CLIENT_SECRET }}" >> local.properties
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
         env:
