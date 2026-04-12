@@ -1,10 +1,14 @@
 package com.apkpackager.ui.auth
 
 import android.app.Application
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.apkpackager.data.auth.AuthRepository
+import com.apkpackager.data.auth.AuthResultBus
+import com.apkpackager.ui.MainActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +28,8 @@ sealed class LoginState {
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     application: Application,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val authResultBus: AuthResultBus
 ) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow<LoginState>(
@@ -34,18 +39,40 @@ class LoginViewModel @Inject constructor(
 
     private var authService: AuthorizationService? = null
 
-    fun startLogin(launchIntent: (Intent) -> Unit) {
+    init {
+        viewModelScope.launch {
+            authResultBus.results.collect { intent -> handleAuthResponse(intent) }
+        }
+    }
+
+    fun startLogin(context: Context) {
         authService?.dispose()
-        val service = AuthorizationService(getApplication())
+        val service = AuthorizationService(context)
         authService = service
-        val authIntent = service.getAuthorizationRequestIntent(authRepository.buildAuthRequest())
-        launchIntent(authIntent)
+
+        val completedIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        val canceledIntent = PendingIntent.getActivity(
+            context, 1,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+
+        service.performAuthorizationRequest(
+            authRepository.buildAuthRequest(),
+            completedIntent,
+            canceledIntent
+        )
         _state.value = LoginState.Loading("Waiting for GitHub authorization...")
     }
 
-    fun handleAuthResponse(intent: Intent) {
+    private fun handleAuthResponse(intent: Intent) {
         authService?.dispose()
         authService = null
+
         val response = AuthorizationResponse.fromIntent(intent)
         val exception = AuthorizationException.fromIntent(intent)
 
@@ -64,9 +91,7 @@ class LoginViewModel @Inject constructor(
                     }
                 }
             }
-            else -> {
-                _state.value = LoginState.Idle
-            }
+            else -> _state.value = LoginState.Idle
         }
     }
 
