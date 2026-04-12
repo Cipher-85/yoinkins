@@ -63,8 +63,36 @@ data class WorkflowRunDto(
     val id: Long,
     val status: String,
     val conclusion: String? = null,
+    @SerialName("run_number") val runNumber: Int = 0,
+    @SerialName("head_branch") val headBranch: String? = null,
     @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("html_url") val htmlUrl: String
+)
+
+@Serializable
+data class WorkflowJobsResponse(
+    @SerialName("total_count") val totalCount: Int,
+    val jobs: List<WorkflowJobDto>
+)
+
+@Serializable
+data class WorkflowJobDto(
+    val id: Long,
+    val name: String,
+    val status: String,
+    val conclusion: String? = null,
+    @SerialName("started_at") val startedAt: String? = null,
+    @SerialName("completed_at") val completedAt: String? = null,
+    val steps: List<WorkflowStepDto>? = null
+)
+
+@Serializable
+data class WorkflowStepDto(
+    val name: String,
+    val status: String,
+    val conclusion: String? = null,
+    val number: Int
 )
 
 @Serializable

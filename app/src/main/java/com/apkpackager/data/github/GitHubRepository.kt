@@ -84,6 +84,38 @@ class GitHubRepository @Inject constructor(
     suspend fun getArtifacts(owner: String, repo: String, runId: Long): List<ArtifactDto> =
         api.listArtifacts(owner, repo, runId).artifacts
 
+    suspend fun listBuildHistory(owner: String, repo: String, page: Int = 1): Result<List<WorkflowRunDto>> {
+        return try {
+            val response = api.listAllWorkflowRuns(owner, repo, page = page)
+            Result.success(response.workflowRuns)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getJobsForRun(owner: String, repo: String, runId: Long): Result<List<WorkflowJobDto>> {
+        return try {
+            val response = api.listWorkflowJobs(owner, repo, runId)
+            Result.success(response.jobs)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getJobLog(owner: String, repo: String, jobId: Long): Result<String> {
+        return try {
+            val response = api.downloadJobLogs(owner, repo, jobId)
+            if (response.isSuccessful) {
+                val body = response.body()?.string() ?: ""
+                Result.success(body)
+            } else {
+                Result.failure(Exception("Failed to fetch logs: HTTP ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun getArtifactDownloadUrl(owner: String, repo: String, artifactId: Long): String =
         "https://api.github.com/repos/$owner/$repo/actions/artifacts/$artifactId/zip"
 

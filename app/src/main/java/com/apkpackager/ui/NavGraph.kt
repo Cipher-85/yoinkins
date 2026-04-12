@@ -13,6 +13,10 @@ import com.apkpackager.ui.branches.BranchPickerScreen
 import com.apkpackager.ui.branches.BranchPickerViewModel
 import com.apkpackager.ui.build.BuildDashboardScreen
 import com.apkpackager.ui.build.BuildDashboardViewModel
+import com.apkpackager.ui.history.BuildHistoryScreen
+import com.apkpackager.ui.history.BuildHistoryViewModel
+import com.apkpackager.ui.history.BuildLogScreen
+import com.apkpackager.ui.history.BuildLogViewModel
 import com.apkpackager.ui.repos.RepoListScreen
 import com.apkpackager.ui.repos.RepoListViewModel
 import java.net.URLDecoder
@@ -86,6 +90,53 @@ fun AppNavGraph() {
                 owner = owner,
                 repo = repo,
                 branch = branch,
+                onBack = { navController.popBackStack() },
+                onHistory = {
+                    val encodedOwner = URLEncoder.encode(owner, "UTF-8")
+                    val encodedRepo = URLEncoder.encode(repo, "UTF-8")
+                    navController.navigate("history/$encodedOwner/$encodedRepo")
+                }
+            )
+        }
+        composable(
+            "history/{owner}/{repo}",
+            arguments = listOf(
+                navArgument("owner") { type = NavType.StringType },
+                navArgument("repo") { type = NavType.StringType }
+            )
+        ) { backStack ->
+            val owner = URLDecoder.decode(backStack.arguments?.getString("owner") ?: "", "UTF-8")
+            val repo = URLDecoder.decode(backStack.arguments?.getString("repo") ?: "", "UTF-8")
+            val vm: BuildHistoryViewModel = hiltViewModel()
+            BuildHistoryScreen(
+                viewModel = vm,
+                owner = owner,
+                repo = repo,
+                onBack = { navController.popBackStack() },
+                onRunSelected = { runId ->
+                    val encodedOwner = URLEncoder.encode(owner, "UTF-8")
+                    val encodedRepo = URLEncoder.encode(repo, "UTF-8")
+                    navController.navigate("history/$encodedOwner/$encodedRepo/$runId")
+                }
+            )
+        }
+        composable(
+            "history/{owner}/{repo}/{runId}",
+            arguments = listOf(
+                navArgument("owner") { type = NavType.StringType },
+                navArgument("repo") { type = NavType.StringType },
+                navArgument("runId") { type = NavType.LongType }
+            )
+        ) { backStack ->
+            val owner = URLDecoder.decode(backStack.arguments?.getString("owner") ?: "", "UTF-8")
+            val repo = URLDecoder.decode(backStack.arguments?.getString("repo") ?: "", "UTF-8")
+            val runId = backStack.arguments?.getLong("runId") ?: 0L
+            val vm: BuildLogViewModel = hiltViewModel()
+            BuildLogScreen(
+                viewModel = vm,
+                owner = owner,
+                repo = repo,
+                runId = runId,
                 onBack = { navController.popBackStack() }
             )
         }
