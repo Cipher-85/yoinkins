@@ -16,14 +16,14 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        viewModel.handleAuthResult(result)
-    }
-
     LaunchedEffect(state) {
         if (state is LoginState.Success) onLoggedIn()
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        result.data?.let { viewModel.handleAuthResponse(it) }
     }
 
     Column(
@@ -43,10 +43,7 @@ fun LoginScreen(
         when (val s = state) {
             is LoginState.Idle, is LoginState.Error -> {
                 Button(
-                    onClick = {
-                        viewModel.startLogin()
-                        launcher.launch(viewModel.buildAuthIntent())
-                    },
+                    onClick = { viewModel.startLogin { launcher.launch(it) } },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Sign in with GitHub")

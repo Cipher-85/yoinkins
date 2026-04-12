@@ -1,9 +1,7 @@
 package com.apkpackager.ui.auth
 
-import android.app.Activity
 import android.app.Application
 import android.content.Intent
-import androidx.activity.result.ActivityResult
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.apkpackager.data.auth.AuthRepository
@@ -34,32 +32,26 @@ class LoginViewModel @Inject constructor(
     )
     val state: StateFlow<LoginState> = _state
 
-    fun buildAuthIntent(): Intent {
-        val service = AuthorizationService(getApplication())
-        val intent = service.getAuthorizationRequestIntent(authRepository.buildAuthRequest())
-        service.dispose()
-        return intent
-    }
+    private var authService: AuthorizationService? = null
 
-    fun startLogin() {
+    fun startLogin(launchIntent: (Intent) -> Unit) {
+        authService?.dispose()
+        val service = AuthorizationService(getApplication())
+        authService = service
+        val authIntent = service.getAuthorizationRequestIntent(authRepository.buildAuthRequest())
+        launchIntent(authIntent)
         _state.value = LoginState.Loading("Waiting for GitHub authorization...")
     }
 
-    fun handleAuthResult(result: ActivityResult) {
-        val data = result.data
-        if (result.resultCode != Activity.RESULT_OK || data == null) {
-            _state.value = LoginState.Idle
-            return
-        }
-
-        val response = AuthorizationResponse.fromIntent(data)
-        val error = AuthorizationException.fromIntent(data)
+    fun handleAuthResponse(intent: Intent) {
+        authService?.dispose()
+        authService = null
+        val response = AuthorizationResponse.fromIntent(intent)
+        val exception = AuthorizationException.fromIntent(intent)
 
         when {
-            error != null -> {
-                _state.value = LoginState.Error(
-                    error.errorDescription ?: error.error ?: "Authorization failed"
-                )
+            exception != null -> {
+                _state.value = LoginState.Error(exception.errorDescription ?: "Authorization failed")
             }
             response != null -> {
                 _state.value = LoginState.Loading("Exchanging token...")
@@ -72,7 +64,14 @@ class LoginViewModel @Inject constructor(
                     }
                 }
             }
-            else -> _state.value = LoginState.Idle
+            else -> {
+                _state.value = LoginState.Idle
+            }
         }
+    }
+
+    override fun onCleared() {
+        authService?.dispose()
+        super.onCleared()
     }
 }
