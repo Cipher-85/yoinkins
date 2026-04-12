@@ -1,7 +1,11 @@
 package com.apkpackager.ui.history
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -38,6 +42,11 @@ fun BuildLogScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val copyToClipboard = { text: String ->
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("Build Log", text))
+        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(Unit) { viewModel.load(owner, repo, runId) }
 
@@ -89,7 +98,15 @@ fun BuildLogScreen(
                     modifier = Modifier.fillMaxSize().padding(padding)
                 ) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                            Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(onClick = { copyToClipboard(state.error!!) }) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Copy error")
+                            }
+                        }
                     }
                 }
             }
@@ -134,7 +151,8 @@ fun BuildLogScreen(
                                 isSelected = state.selectedJobId == job.id,
                                 isLoadingLog = state.isLoadingLog && state.selectedJobId == job.id,
                                 logContent = if (state.selectedJobId == job.id) state.logContent else null,
-                                onToggleLog = { viewModel.loadJobLog(owner, repo, job.id) }
+                                onToggleLog = { viewModel.loadJobLog(owner, repo, job.id) },
+                                onCopyLog = copyToClipboard
                             )
                         }
                     }
@@ -196,7 +214,8 @@ private fun JobCard(
     isSelected: Boolean,
     isLoadingLog: Boolean,
     logContent: String?,
-    onToggleLog: () -> Unit
+    onToggleLog: () -> Unit,
+    onCopyLog: (String) -> Unit = {}
 ) {
     val (statusIcon, statusColor) = when {
         job.status != "completed" -> Icons.Default.Pending to MaterialTheme.colorScheme.tertiary
@@ -270,19 +289,31 @@ private fun JobCard(
                         color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .horizontalScroll(rememberScrollState())
-                                .padding(12.dp)
-                                .heightIn(max = 400.dp)
-                        ) {
-                            Text(
-                                text = logContent,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                lineHeight = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { onCopyLog(logContent) }) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Copy logs", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                                    .heightIn(max = 400.dp)
+                            ) {
+                                Text(
+                                    text = logContent,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp,
+                                    lineHeight = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }

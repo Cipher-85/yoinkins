@@ -1,7 +1,11 @@
 package com.apkpackager.ui.build
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -92,6 +96,7 @@ fun BuildDashboardScreen(
 
 @Composable
 private fun StepCard(step: StepUiItem) {
+    val context = LocalContext.current
     val (icon, tint) = when (step.status) {
         StepStatus.PENDING -> Icons.Default.RadioButtonUnchecked to MaterialTheme.colorScheme.onSurfaceVariant
         StepStatus.IN_PROGRESS -> Icons.Default.Pending to MaterialTheme.colorScheme.primary
@@ -110,7 +115,21 @@ private fun StepCard(step: StepUiItem) {
                 Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Text(step.label)
+            Text(step.label, modifier = Modifier.weight(1f))
+            if (step.status == StepStatus.ERROR) {
+                IconButton(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Build Error", step.label))
+                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                }) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy error",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }
