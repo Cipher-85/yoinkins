@@ -30,12 +30,6 @@ class AuthRepository @Inject constructor(
             .build()
     }
 
-    fun responseFromRedirect(
-        request: AuthorizationRequest,
-        redirectUri: Uri
-    ): AuthorizationResponse =
-        AuthorizationResponse.Builder(request).fromUri(redirectUri).build()
-
     suspend fun exchangeCode(
         context: Context,
         response: AuthorizationResponse

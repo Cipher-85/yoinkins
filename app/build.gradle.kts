@@ -22,13 +22,13 @@ android {
         applicationId = "com.apkpackager"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"${localProps["github.client.id"] ?: ""}\"")
         buildConfigField("String", "GITHUB_CLIENT_SECRET", "\"${localProps["github.client.secret"] ?: ""}\"")
 
-        manifestPlaceholders["appAuthRedirectScheme"] = "com.apkpackager.unused.appauth"
+        manifestPlaceholders["appAuthRedirectScheme"] = "apkpackager"
     }
 
     buildTypes {

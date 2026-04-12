@@ -1,11 +1,12 @@
 package com.apkpackager.ui.auth
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -14,7 +15,12 @@ fun LoginScreen(
     onLoggedIn: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        viewModel.handleAuthResult(result)
+    }
 
     LaunchedEffect(state) {
         if (state is LoginState.Success) onLoggedIn()
@@ -37,7 +43,10 @@ fun LoginScreen(
         when (val s = state) {
             is LoginState.Idle, is LoginState.Error -> {
                 Button(
-                    onClick = { viewModel.startLogin(context) },
+                    onClick = {
+                        viewModel.startLogin()
+                        launcher.launch(viewModel.buildAuthIntent())
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Sign in with GitHub")
