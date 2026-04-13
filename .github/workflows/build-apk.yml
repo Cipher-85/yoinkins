@@ -12,6 +12,21 @@ jobs:
           java-version: '17'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
+      # REQUIRED: OAuth credentials must be injected or GitHub sign-in will silently fail
+      - name: Create local.properties
+        run: |
+          echo "github.client.id=${{ secrets.OAUTH_CLIENT_ID }}" >> local.properties
+          echo "github.client.secret=${{ secrets.OAUTH_CLIENT_SECRET }}" >> local.properties
+      - name: Verify OAuth credentials
+        run: |
+          if ! grep -q 'github.client.id=.' local.properties; then
+            echo "::error::OAUTH_CLIENT_ID secret is missing or empty — the built APK will not be able to sign in"
+            exit 1
+          fi
+          if ! grep -q 'github.client.secret=.' local.properties; then
+            echo "::error::OAUTH_CLIENT_SECRET secret is missing or empty — the built APK will not be able to sign in"
+            exit 1
+          fi
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
         env:
