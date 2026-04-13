@@ -115,7 +115,7 @@ private fun StepCard(step: StepUiItem) {
             if (step.status == StepStatus.ERROR) {
                 IconButton(onClick = {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Build Error", step.label))
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Build Error", step.errorDetail ?: step.label))
                     Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                 }) {
                     Icon(

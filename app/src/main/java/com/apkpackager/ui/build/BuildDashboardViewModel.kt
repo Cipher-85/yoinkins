@@ -24,7 +24,7 @@ data class BuildUiState(
     val needsInstallPermission: Boolean = false
 )
 
-data class StepUiItem(val label: String, val status: StepStatus)
+data class StepUiItem(val label: String, val status: StepStatus, val errorDetail: String? = null)
 
 enum class StepStatus { PENDING, IN_PROGRESS, DONE, ERROR }
 
@@ -51,10 +51,10 @@ class BuildDashboardViewModel @Inject constructor(
         val current = _state.value
         val steps = current.steps.toMutableList()
 
-        fun upsert(label: String, status: StepStatus) {
+        fun upsert(label: String, status: StepStatus, errorDetail: String? = null) {
             val idx = steps.indexOfFirst { it.label == label }
-            if (idx >= 0) steps[idx] = StepUiItem(label, status)
-            else steps.add(StepUiItem(label, status))
+            if (idx >= 0) steps[idx] = StepUiItem(label, status, errorDetail)
+            else steps.add(StepUiItem(label, status, errorDetail))
         }
 
         when (step) {
@@ -79,10 +79,14 @@ class BuildDashboardViewModel @Inject constructor(
                 upsert("Build complete", StepStatus.DONE)
             }
             is BuildStep.Failure -> {
-                upsert("Build failed (${step.conclusion ?: "unknown"})", StepStatus.ERROR)
+                upsert(
+                    "Build failed (${step.conclusion ?: "unknown"})",
+                    StepStatus.ERROR,
+                    "Build failed with conclusion: ${step.conclusion ?: "unknown"}\n${step.htmlUrl}"
+                )
             }
             is BuildStep.Error -> {
-                upsert("Error: ${step.message}", StepStatus.ERROR)
+                upsert("Error: ${step.message}", StepStatus.ERROR, step.message)
             }
         }
 
