@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         dispatchOAuthRedirect(intent)
         val isLoggedIn = tokenStore.hasToken()
         setContent {
-            APKPackagerTheme {
+            YoinkinsTheme {
                 AppNavGraph(isLoggedIn = isLoggedIn)
             }
         }

@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "APKPackager"
+rootProject.name = "Yoinkins"
 include(":app")
