@@ -2,6 +2,7 @@ package com.apkpackager.ui.commits
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.apkpackager.data.LastKnownGoodStore
 import com.apkpackager.data.github.GitHubRepository
 import com.apkpackager.data.github.model.CommitDto
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +19,8 @@ sealed class CommitListState {
 
 @HiltViewModel
 class CommitHistoryViewModel @Inject constructor(
-    private val githubRepository: GitHubRepository
+    private val githubRepository: GitHubRepository,
+    private val lastKnownGoodStore: LastKnownGoodStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<CommitListState>(CommitListState.Loading)
@@ -27,11 +29,15 @@ class CommitHistoryViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
+    private val _lastKnownGoodSha = MutableStateFlow<String?>(null)
+    val lastKnownGoodSha: StateFlow<String?> = _lastKnownGoodSha
+
     fun loadCommits(owner: String, repo: String, branch: String) {
         viewModelScope.launch {
             _state.value = CommitListState.Loading
             fetchCommits(owner, repo, branch)
         }
+        observeLastKnownGood(owner, repo, branch)
     }
 
     fun refresh(owner: String, repo: String, branch: String) {
@@ -39,6 +45,24 @@ class CommitHistoryViewModel @Inject constructor(
             _isRefreshing.value = true
             fetchCommits(owner, repo, branch)
             _isRefreshing.value = false
+        }
+    }
+
+    fun toggleLastKnownGood(owner: String, repo: String, branch: String, sha: String) {
+        viewModelScope.launch {
+            if (_lastKnownGoodSha.value == sha) {
+                lastKnownGoodStore.clear(owner, repo, branch)
+            } else {
+                lastKnownGoodStore.set(owner, repo, branch, sha)
+            }
+        }
+    }
+
+    private fun observeLastKnownGood(owner: String, repo: String, branch: String) {
+        viewModelScope.launch {
+            lastKnownGoodStore.observe(owner, repo, branch).collect {
+                _lastKnownGoodSha.value = it
+            }
         }
     }
 

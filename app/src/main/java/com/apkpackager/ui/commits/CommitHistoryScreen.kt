@@ -32,6 +32,7 @@ fun CommitHistoryScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val lastKnownGoodSha by viewModel.lastKnownGoodSha.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(owner, repo, branch) { viewModel.loadCommits(owner, repo, branch) }
@@ -96,7 +97,11 @@ fun CommitHistoryScreen(
                         items(s.commits, key = { it.sha }) { commit ->
                             CommitCard(
                                 commit = commit,
+                                isLastKnownGood = commit.sha == lastKnownGoodSha,
                                 onBuild = { onCommitSelected(commit.sha, firstLine(commit.commit.message)) },
+                                onToggleLastKnownGood = {
+                                    viewModel.toggleLastKnownGood(owner, repo, branch, commit.sha)
+                                },
                                 onOpenInBrowser = {
                                     context.startActivity(
                                         Intent(Intent.ACTION_VIEW, Uri.parse(commit.htmlUrl))
@@ -115,7 +120,9 @@ fun CommitHistoryScreen(
 @Composable
 private fun CommitCard(
     commit: CommitDto,
+    isLastKnownGood: Boolean,
     onBuild: () -> Unit,
+    onToggleLastKnownGood: () -> Unit,
     onOpenInBrowser: () -> Unit
 ) {
     ListItem(
@@ -135,6 +142,20 @@ private fun CommitCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                if (isLastKnownGood) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            "Last Known Good",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
         },
         headlineContent = {
@@ -151,6 +172,14 @@ private fun CommitCard(
         },
         trailingContent = {
             Row {
+                IconButton(onClick = onToggleLastKnownGood) {
+                    Icon(
+                        if (isLastKnownGood) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        contentDescription = if (isLastKnownGood) "Unmark last known good" else "Mark as last known good",
+                        tint = if (isLastKnownGood) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
                 IconButton(onClick = onBuild) {
                     Icon(
                         Icons.Default.RocketLaunch,
